@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gráfico de Nível do Rio</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef2f5;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #0077b6;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    canvas {
+      margin-top: 2rem;
+    }
+    .alerta {
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .risco {
+      background-color: #ffe0e0;
+      color: #b30000;
+    }
+    .ok {
+      background-color: #d4f7dc;
+      color: #206a36;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌊 Previsão de Nível do Rio</h1>
+    <p>Baseado na função polinomial do relatório</p>
+  </header>
+  <main>
+    <canvas id="graficoRio" width="700" height="400"></canvas>
+    <div id="mensagemAlerta"></div>
+  </main>
+
+  <script>
+    function f(x) {
+      return -0.0096 * Math.pow(x, 3) + 0.0636 * Math.pow(x, 2) + 0.3959 * x - 0.2067;
+    }
+
+    const dias = Array.from({length: 11}, (_, i) => i); // 0 a 10
+    const niveis = dias.map(f);
+    const limiteSeguro = 2;
+    const pontoCriticoX = 6;
+    const pontoCriticoY = f(pontoCriticoX);
+
+    // Verificar risco
+    const risco = niveis.some(n => n > limiteSeguro);
+    const alerta = document.getElementById("mensagemAlerta");
+    alerta.className = "alerta " + (risco ? "risco" : "ok");
+    alerta.textContent = risco
+      ? "🚨 Alerta: Nível do rio ultrapassa o limite de segurança (2m)!"
+      : "✅ Tudo certo: Nível do rio dentro do limite seguro.";
+
+    const ctx = document.getElementById("graficoRio").getContext("2d");
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dias.map(d => `Dia ${d}`),
+        datasets: [
+          {
+            label: 'Nível do Rio (m)',
+            data: niveis,
+            fill: false,
+            borderColor: '#0077b6',
+            backgroundColor: '#0077b6',
+            tension: 0.3
+          },
+          {
+            label: 'Limite Seguro (2m)',
+            data: dias.map(() => limiteSeguro),
+            borderColor: 'red',
+            borderDash: [5, 5],
+            pointRadius: 0,
+            tension: 0
+          },
+          {
+            label: 'Ponto Crítico (Dia 6)',
+            data: dias.map(d => d === pontoCriticoX ? pontoCriticoY : null),
+            backgroundColor: 'orange',
+            borderColor: 'orange',
+            pointRadius: 6,
+            type: 'line',
+            showLine: false
+          }
+        ]
+      },
+      options: {
+        scales: {
+          y: {
+            title: {
+              display: true,
+              text: 'Nível do Rio (m)'
+            },
+            beginAtZero: true
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Dias'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              usePointStyle: true
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
